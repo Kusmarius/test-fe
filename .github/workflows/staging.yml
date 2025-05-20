@@ -3,14 +3,35 @@ name: Deploy on feature merge to develop
 on:
   pull_request:
     types:
-      - closed
+      - opened
+      - synchronize
+      - reopened
     branches:
       - develop
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run tests
+        run: npm run test
+
   deploy:
     if: github.event.pull_request.merged == true && startsWith(github.head_ref, 'feature/')
     runs-on: ubuntu-latest
+    needs: test  # Osiguravamo da se deploy izvrši samo ako su testovi prošli
 
     steps:
       - name: Checkout code
