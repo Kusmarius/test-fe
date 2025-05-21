@@ -55,3 +55,40 @@ jobs:
 
           # Apply Terraform configuration
           terraform apply -target=module.frontend -var="env=$WORKSPACE" -auto-approve
+
+      - name: Checkout current repo (frontend)
+        uses: actions/checkout@v3
+
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies and build
+        run: |
+          npm install
+          npm run build
+
+      - name: Get Terraform outputs
+        id: tf-outputs
+        working-directory: dev
+        run: |
+          BUCKET=$(terraform output -raw frontend_bucket_name)
+          DISTRIBUTION_ID=$(terraform output -raw frontend_distribution_id)
+          echo "bucket=$BUCKET" >> $GITHUB_OUTPUT
+          echo "distribution_id=$DISTRIBUTION_ID" >> $GITHUB_OUTPUT
+
+      - name: Upload build to S3
+        run: |
+          aws s3 sync build/ s3://${{ steps.tf-outputs.outputs.bucket }}/ --delete
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Invalidate CloudFront
+        run: |
+          aws cloudfront create-invalidation --distribution-id ${{ steps.tf-outputs.outputs.distribution_id }} --paths "/*"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
