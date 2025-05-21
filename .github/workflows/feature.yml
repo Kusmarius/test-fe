@@ -11,6 +11,29 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Get Git info
+        id: git_info
+        run: |
+          echo "BRANCH=${GITHUB_REF##*/}" >> $GITHUB_OUTPUT
+          echo "HASH=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "AUTHOR=$(git log -1 --pretty=format:'%an')" >> $GITHUB_OUTPUT
+          echo "MESSAGE=$(git log -1 --pretty=format:'%s')" >> $GITHUB_OUTPUT
+
+      - name: Notify start to Discord
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          curl -H "Content-Type: application/json" \
+               -X POST \
+               -d "$(jq -n \
+                  --arg branch "${{ steps.git_info.outputs.BRANCH }}" \
+                  --arg hash "${{ steps.git_info.outputs.HASH }}" \
+                  --arg author "${{ steps.git_info.outputs.AUTHOR }}" \
+                  --arg message "${{ steps.git_info.outputs.MESSAGE }}" \
+                  '{content: "🚀 Deploying \($branch)@\($hash)\nAuthor: \($author)\nMessage: \($message)"}')" \
+               $DISCORD_WEBHOOK
+
+
       - name: Set up SSH
         run: |
           mkdir -p ~/.ssh
