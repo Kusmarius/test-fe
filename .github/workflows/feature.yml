@@ -24,7 +24,11 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
         with:
-          terraform_version: 1.5.0  # ili verzija koju koristiš
+          terraform_version: 1.5.0
+
+      - name: List files
+        run: |
+          ls -R
 
       - name: Init and Apply Terraform
         working-directory: dev
