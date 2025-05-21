@@ -54,4 +54,4 @@ jobs:
           terraform workspace select "$WORKSPACE"
 
           # Apply Terraform configuration
-          terraform apply -target=module.frontend -var="env=$WORKSPACE"" -auto-approve
+          terraform apply -target=module.frontend -var="env=$WORKSPACE" -auto-approve
