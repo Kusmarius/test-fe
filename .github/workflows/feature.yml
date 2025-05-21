@@ -26,6 +26,7 @@ jobs:
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.11.4  # Zadržao sam tvoju verziju
+          terraform_wrapper: false 
 
       - name: List files
         run: |
