@@ -48,7 +48,7 @@ jobs:
 
           terraform workspace select "$WORKSPACE" || echo "Workspace $WORKSPACE doesn't exist. Nothing to destroy."
 
-          terraform destroy -auto-approve -var="env=$WORKSPACE"
+          terraform destroy -target=module.frontend -var="env=$WORKSPACE" -auto-approve
 
           terraform workspace select default
           terraform workspace delete "$WORKSPACE"
