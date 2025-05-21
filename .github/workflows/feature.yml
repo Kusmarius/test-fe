@@ -14,9 +14,9 @@ jobs:
       - name: Get commit info from GitHub API (pre checkout)
         id: git_info
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          BRANCH="${GITHUB_REF##*/}"
+          BRANCH="${GITHUB_REF_NAME}"
           HASH="${GITHUB_SHA:0:7}"
           API_URL="https://api.github.com/repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}"
           RESPONSE=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" "$API_URL")
@@ -132,6 +132,7 @@ jobs:
                   --arg hash "${{ steps.git_info.outputs.HASH }}" \
                   --arg author "${{ steps.git_info.outputs.AUTHOR }}" \
                   --arg message "${{ steps.git_info.outputs.MESSAGE }}" \
-                  '{content: "✅ Deployment finished\nAuthor: \($author)\nMessage: \($message)\n\($branch)@\($hash)"}')" \
+                  --arg bucket "${{ steps.tf-outputs.outputs.bucket }}" \
+                  '{content: "✅ Deployment finished\nEnvironment: https://\($bucket)\nAuthor: \($author)\nMessage: \($message)\n\($branch)@\($hash)"}')" \
                $DISCORD_WEBHOOK
 
