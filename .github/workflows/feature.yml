@@ -56,6 +56,7 @@ jobs:
           # Apply Terraform configuration
           terraform apply -target=module.frontend -var="env=$WORKSPACE" -auto-approve
 
+
       - name: Get Terraform outputs
         id: tf-outputs
         working-directory: dev
@@ -64,7 +65,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
           terraform workspace select "$(echo "${GITHUB_REF_NAME}" | sed 's|[/_]|-|g')"
-    
+
           BUCKET=$(terraform output -raw frontend_bucket_name)
           DISTRIBUTION_ID=$(terraform output -raw frontend_distribution_id)
 
