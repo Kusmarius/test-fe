@@ -64,11 +64,18 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
           terraform workspace select "$(echo "${GITHUB_REF_NAME}" | sed 's|[/_]|-|g')"
-          terraform output
+    
           BUCKET=$(terraform output -raw frontend_bucket_name)
           DISTRIBUTION_ID=$(terraform output -raw frontend_distribution_id)
-          echo "bucket=$BUCKET" >> $GITHUB_OUTPUT
-          echo "distribution_id=$DISTRIBUTION_ID" >> $GITHUB_OUTPUT
+
+          echo "bucket=$BUCKET"
+          echo "distribution_id=$DISTRIBUTION_ID"
+
+          {
+            echo "bucket=$BUCKET"
+            echo "distribution_id=$DISTRIBUTION_ID"
+          } >> "$GITHUB_OUTPUT"
+
 
       - name: Checkout current repo (frontend)
         uses: actions/checkout@v3
