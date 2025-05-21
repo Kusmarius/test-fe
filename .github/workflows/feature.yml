@@ -20,9 +20,8 @@ jobs:
 
       - name: Clone external repo
         run: |
-          git clone "${{ secrets.EXTERNAL_REPO_URL }}"
-          path: .
-  
+          git clone "${{ secrets.EXTERNAL_REPO_URL }}" .
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
         with:
