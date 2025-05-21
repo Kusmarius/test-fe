@@ -1,0 +1,41 @@
+name: Feature Terraform Deploy
+
+on:
+  push:
+    branches:
+      - 'feature/**'
+
+jobs:
+  terraform:
+    name: Run Terraform on Feature Branch
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EXTERNAL_REPO_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+      - name: Clone external repo
+        run: |
+          git clone git@github.com:external-org/external-repo.git external-repo
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.5.0  # ili verzija koju koristiš
+
+      - name: Init and Apply Terraform
+        working-directory: ./external-repo/dev
+        env:
+          TF_WORKSPACE: ${{ github.ref_name }}
+        run: |
+          WORKSPACE=$(echo "${GITHUB_REF_NAME}" | sed 's|/|-|g')
+          echo "Using workspace: $WORKSPACE"
+          
+          terraform init
+          terraform workspace new "$WORKSPACE" || terraform workspace select "$WORKSPACE"
+          terraform apply -auto-approve
+
