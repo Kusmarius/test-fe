@@ -56,7 +56,6 @@ jobs:
           # Apply Terraform configuration
           terraform apply -target=module.frontend -var="env=$WORKSPACE" -auto-approve
 
-
       - name: Get Terraform outputs
         id: tf-outputs
         working-directory: dev
@@ -69,14 +68,8 @@ jobs:
           BUCKET=$(terraform output -raw frontend_bucket_name)
           DISTRIBUTION_ID=$(terraform output -raw frontend_distribution_id)
 
-          echo "bucket=$BUCKET"
-          echo "distribution_id=$DISTRIBUTION_ID"
-
-          {
-            echo "bucket=$BUCKET"
-            echo "distribution_id=$DISTRIBUTION_ID"
-          } >> "$GITHUB_OUTPUT"
-
+          echo "bucket=$BUCKET" >> $GITHUB_OUTPUT
+          echo "distribution_id=$DISTRIBUTION_ID" >> $GITHUB_OUTPUT
 
       - name: Checkout current repo (frontend)
         uses: actions/checkout@v3
