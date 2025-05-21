@@ -25,7 +25,7 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
         with:
-          terraform_version: 1.11.4
+          terraform_version: 1.11.4  # Zadržao sam tvoju verziju
 
       - name: List files
         run: |
@@ -33,13 +33,23 @@ jobs:
 
       - name: Init and Apply Terraform
         working-directory: dev
-        env:
-          TF_WORKSPACE: ${{ github.ref_name }}
         run: |
+          # Convert slashes and underscores to dashes
           WORKSPACE=$(echo "${GITHUB_REF_NAME}" | sed 's|[/_]|-|g')
           echo "Using workspace: $WORKSPACE"
-          
+
+          # Initialize Terraform
           terraform init
-          terraform workspace new "$WORKSPACE" || terraform workspace select "$WORKSPACE"
+
+          # Check if workspace exists, then create or select it
+          terraform workspace list
+          
+          # If workspace doesn't exist, create it
+          terraform workspace new "$WORKSPACE" || echo "Workspace $WORKSPACE already exists, selecting it."
+
+          # Select the workspace
+          terraform workspace select "$WORKSPACE"
+          
+          # Apply Terraform configuration
           terraform apply -auto-approve
 
