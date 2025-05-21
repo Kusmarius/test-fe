@@ -3,10 +3,7 @@ name: Destroy Terraform Workspace on Merge to Develop
 on:
   push:
     branches:
-      - 'develop'
-  delete:
-    branches:
-      - 'feature/**'
+      - 'develop'  # Trigger kada se izvrši merge u develop
 
 jobs:
   terraform-destroy:
@@ -31,9 +28,16 @@ jobs:
           terraform_version: 1.11.4
           terraform_wrapper: false  # BITNO za raw output bez wrappera
 
+      - name: Get the Source Branch (pull request base)
+        id: get-source-branch
+        run: |
+          echo "The source branch is: ${{ github.event.pull_request.head.ref }}"
+          echo "source_branch=${{ github.event.pull_request.head.ref }}" >> $GITHUB_ENV
+
       - name: Debug Ref Name
         run: |
           echo "Ref name is: ${GITHUB_REF_NAME}"
+          echo "Source Branch: ${{ env.source_branch }}"
 
       - name: Destroy Terraform
         working-directory: dev
@@ -41,7 +45,9 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
-          WORKSPACE=$(echo "${GITHUB_REF_NAME}" | sed 's|[/_]|-|g')
+          # Fetch the source branch name from environment variables
+          WORKSPACE="${{ env.source_branch }}"  # Ovo je grana koja se merge-ovala
+
           echo "Destroying workspace: $WORKSPACE"
 
           terraform init
