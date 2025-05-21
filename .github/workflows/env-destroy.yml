@@ -1,6 +1,9 @@
-name: Destroy Terraform Workspace on Branch Delete
+name: Destroy Terraform Workspace on Merge to Develop
 
 on:
+  push:
+    branches:
+      - 'develop'
   delete:
     branches:
       - 'feature/**'
@@ -26,7 +29,11 @@ jobs:
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.11.4
-          terraform_wrapper: false  # <<< BITNO za raw output bez wrappera
+          terraform_wrapper: false  # BITNO za raw output bez wrappera
+
+      - name: Debug Ref Name
+        run: |
+          echo "Ref name is: ${GITHUB_REF_NAME}"
 
       - name: Destroy Terraform
         working-directory: dev
@@ -40,7 +47,7 @@ jobs:
           terraform init
 
           terraform workspace select "$WORKSPACE" || echo "Workspace $WORKSPACE doesn't exist. Nothing to destroy."
-          
+
           terraform destroy -auto-approve -var="env=$WORKSPACE"
 
           terraform workspace select default
