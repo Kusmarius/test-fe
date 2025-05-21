@@ -27,7 +27,7 @@ jobs:
           terraform_version: 1.5.0  # ili verzija koju koristiš
 
       - name: Init and Apply Terraform
-        working-directory: ./external-repo/dev
+        working-directory: ./dev
         env:
           TF_WORKSPACE: ${{ github.ref_name }}
         run: |
