@@ -60,6 +60,8 @@ jobs:
         id: tf-outputs
         working-directory: dev
         run: |
+          terraform workspace select "$(echo "${GITHUB_REF_NAME}" | sed 's|[/_]|-|g')"
+          terraform output
           BUCKET=$(terraform output -raw frontend_bucket_name)
           DISTRIBUTION_ID=$(terraform output -raw frontend_distribution_id)
           echo "bucket=$BUCKET" >> $GITHUB_OUTPUT
