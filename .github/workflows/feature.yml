@@ -36,7 +36,7 @@ jobs:
         env:
           TF_WORKSPACE: ${{ github.ref_name }}
         run: |
-          WORKSPACE=$(echo "${GITHUB_REF_NAME}" | sed 's|/|-|g')
+          WORKSPACE=$(echo "${GITHUB_REF_NAME}" | sed 's|[/_]|-|g')
           echo "Using workspace: $WORKSPACE"
           
           terraform init
