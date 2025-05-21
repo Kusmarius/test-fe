@@ -1,0 +1,101 @@
+name: Feature Terraform Deploy
+
+on:
+  push:
+    branches:
+      - 'feature/**'
+
+jobs:
+  terraform:
+    name: Run Terraform on Feature Branch
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EXTERNAL_REPO_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+      - name: Clone external repo
+        run: |
+          git clone "${{ secrets.EXTERNAL_REPO_URL }}" .
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.11.4  # Zadržao sam tvoju verziju
+          terraform_wrapper: false 
+
+      - name: List files
+        run: |
+          ls -R
+
+      - name: Init and Apply Terraform
+        working-directory: dev
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}  # Dodajemo AWS kredencijale
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}  # Dodajemo AWS tajni ključ
+        run: |
+          # Convert slashes and underscores to dashes
+          WORKSPACE=$(echo "${GITHUB_REF_NAME}" | sed 's|[/_]|-|g')
+          echo "Using workspace: $WORKSPACE"
+
+          # Initialize Terraform
+          terraform init
+
+          # Check if workspace exists, then create or select it
+          terraform workspace list
+
+          # If workspace doesn't exist, create it
+          terraform workspace new "$WORKSPACE" || echo "Workspace $WORKSPACE already exists, selecting it."
+
+          # Select the workspace
+          terraform workspace select "$WORKSPACE"
+
+          # Apply Terraform configuration
+          terraform apply -target=module.frontend -var="env=$WORKSPACE" -auto-approve
+
+      - name: Get Terraform outputs
+        id: tf-outputs
+        working-directory: dev
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          terraform workspace select "$(echo "${GITHUB_REF_NAME}" | sed 's|[/_]|-|g')"
+
+          BUCKET=$(terraform output -raw frontend_bucket_name)
+          DISTRIBUTION_ID=$(terraform output -raw frontend_distribution_id)
+
+          echo "bucket=$BUCKET" >> $GITHUB_OUTPUT
+          echo "distribution_id=$DISTRIBUTION_ID" >> $GITHUB_OUTPUT
+
+      - name: Checkout current repo (frontend)
+        uses: actions/checkout@v3
+
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies and build
+        run: |
+          npm install
+          npm run build
+
+      - name: Upload build to S3
+        run: |
+          aws s3 sync dist/ s3://${{ steps.tf-outputs.outputs.bucket }}/ --delete
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Invalidate CloudFront
+        run: |
+          aws cloudfront create-invalidation --distribution-id ${{ steps.tf-outputs.outputs.distribution_id }} --paths "/*"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
