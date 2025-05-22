@@ -101,7 +101,10 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 18
-
+      - name: Verify ENV_FEATURE variable
+        run: |
+          echo "The value of ENV_FEATURE is: ${{ vars.ENV_FEATURE }}"
+        
       - name: Write ENV_FEATURE to .env file
         run: |
           echo "ENV_FEATURE=${{ vars.ENV_FEATURE }}" > .env
@@ -109,6 +112,7 @@ jobs:
       - name: Display .env file content
         run: |
           cat .env
+
 #      - name: Generate .env from repo variables
 #        run: |
 #          echo "🛠 Generating .env for branch: $GITHUB_REF_NAME"
