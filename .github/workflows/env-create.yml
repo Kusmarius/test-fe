@@ -102,27 +102,26 @@ jobs:
         with:
           node-version: 18
 
-      - name: Generate .env from repo variable
+      - name: Generate .env for FEATURE
+        if: startsWith(github.ref_name, 'feature/')
+        run: echo "${{ vars.ENV_FEATURE }}" > .env
+
+      - name: Generate .env for DEVELOP
+        if: github.ref_name == 'develop'
+        run: echo "${{ vars.ENV_DEVELOP }}" > .env
+
+      - name: Generate .env for MAIN
+        if: github.ref_name == 'main'
+        run: echo "${{ vars.ENV_STAGING }}" > .env
+
+      - name: Generate .env for PROD (fallback)
+        if: github.ref_name != 'develop' && github.ref_name != 'main' && !startsWith(github.ref_name, 'feature/')
+        run: echo "${{ vars.ENV_PROD }}" > .env
+
+      - name: Show .env content
         run: |
-          echo "🛠 Generating .env for branch: $GITHUB_REF_NAME"
-
-          BRANCH_NAME="$GITHUB_REF_NAME"
-
-          if [[ "$BRANCH_NAME" == feature/* ]]; then
-            echo "${{ vars.ENV_FEATURE }}" > .env
-          elif [[ "$BRANCH_NAME" == "develop" ]]; then
-            echo "${{ vars.ENV_DEVELOP }}" > .env
-          elif [[ "$BRANCH_NAME" == "main" ]]; then
-            echo "${{ vars.ENV_STAGING }}" > .env
-          else
-            echo "${{ vars.ENV_PROD }}" > .env
-          fi
-
-          echo "✅ .env file created:"
+          echo "✅ Generated .env file:"
           cat .env
-        shell: bash
-        env:
-          GITHUB_REF_NAME: ${{ github.ref_name }}
 
 
       - name: Show generated .env (debug, remove in prod)
