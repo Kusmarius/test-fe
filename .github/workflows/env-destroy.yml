@@ -69,7 +69,7 @@ jobs:
           terraform destroy -target=module.frontend -var="env=$WORKSPACE" -auto-approve
 
           terraform workspace select default
-          terraform workspace delete "$WORKSPACE" -force
+          terraform workspace delete "$WORKSPACE"
 
       - name: Notify success to Discord
         if: success()
