@@ -133,6 +133,6 @@ jobs:
                   --arg author "${{ steps.git_info.outputs.AUTHOR }}" \
                   --arg message "${{ steps.git_info.outputs.MESSAGE }}" \
                   --arg bucket "${{ steps.tf-outputs.outputs.bucket }}" \
-                  '{content: "✅ Deployment finished\nEnvironment: https://\($bucket)\nAuthor: \($author)\nMessage: \($message)\n\($branch)@\($hash\n)"}')" \
+                  '{content: "✅ Deployment finished\nEnvironment: https://\($bucket)\nAuthor: \($author)\nMessage: \($message)\n\($branch)@\($hash)\n"}')" \
                $DISCORD_WEBHOOK
 
