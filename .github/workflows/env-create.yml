@@ -106,47 +106,28 @@ jobs:
         with:
           node-version: 18
 
-      - name: Install GitHub CLI
+      - name: Generate .env from repo variable
         run: |
-          type -p gh || (curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg && \
-          sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg && \
-          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null && \
-          sudo apt update && sudo apt install gh -y)
+          echo "🛠 Generating .env for branch ${{ github.ref_name }}"
 
-      - name: Authenticate GitHub CLI
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | GITHUB_TOKEN= gh auth login --with-token
+          case "${{ github.ref_name }}" in
+            feature/*)
+              echo "${{ vars.ENV_FEATURE }}" > .env
+              ;;
+            develop)
+              echo "${{ vars.ENV_DEVELOP }}" > .env
+              ;;
+            main)
+              echo "${{ vars.ENV_MAIN }}" > .env
+              ;;
+            *)
+              echo "${{ vars.ENV_PROD }}" > .env
+              ;;
+          esac
 
-      - name: Detect environment based on branch
-        id: detect_env
-        run: |
-          echo "Branch: $GITHUB_REF_NAME"
-          if [[ "$GITHUB_REF_NAME" == main ]]; then
-            ENV=staging
-          elif [[ "$GITHUB_REF_NAME" == develop ]]; then
-            ENV=develop
-          elif [[ "$GITHUB_REF_NAME" == feature/* ]]; then
-            ENV=feature
-          else
-            echo "Unknown branch for env detection: $GITHUB_REF_NAME"
-            exit 1
-          fi
-          echo "env=$ENV" >> "$GITHUB_OUTPUT"
+          echo "✅ .env file created:"
+          cat .env
 
-      - name: Generate .env file from repo variables and secrets
-        run: |
-          echo "# Generated .env for environment ${{ steps.detect_env.outputs.env }}" > .env
-
-          gh variable list --env "${{ steps.detect_env.outputs.env }}" --json name,value \
-            | jq -r '.[] | "\(.name)=\(.value)"' >> .env
-
-          echo -e "\n# Secrets" >> .env
-          gh secret list --env "${{ steps.detect_env.outputs.env }}" --json name \
-            | jq -r '.[].name' \
-            | while read -r name; do
-                val=$(gh secret view "$name" --env "${{ steps.detect_env.outputs.env }}" --json value | jq -r .value)
-                echo "$name=$val" >> .env
-              done
 
       - name: Show generated .env (debug, remove in prod)
         run: cat .env
