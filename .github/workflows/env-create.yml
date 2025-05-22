@@ -109,10 +109,8 @@ jobs:
           sudo apt update && sudo apt install gh -y)
 
       - name: Authenticate GitHub CLI
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: echo "$GITHUB_TOKEN" | gh auth login --with-token
-
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | GITHUB_TOKEN= gh auth login --with-token
 
       - name: Detect environment based on branch
         id: detect_env
