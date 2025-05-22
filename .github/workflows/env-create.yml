@@ -101,6 +101,47 @@ jobs:
         with:
           node-version: 18
 
+      - name: Install GitHub CLI
+        uses: cli/cli-action@v2
+
+      - name: Auth GH CLI
+        run: gh auth setup-git
+
+      - name: Detect environment based on branch
+        id: detect_env
+        run: |
+          echo "Branch: $GITHUB_REF_NAME"
+          if [[ "$GITHUB_REF_NAME" == main ]]; then
+            ENV=staging
+          elif [[ "$GITHUB_REF_NAME" == develop ]]; then
+            ENV=develop
+          elif [[ "$GITHUB_REF_NAME" == feature/* ]]; then
+            ENV=feature
+          else
+            echo "Unknown branch for env detection: $GITHUB_REF_NAME"
+            exit 1
+          fi
+          echo "env=$ENV" >> "$GITHUB_OUTPUT"
+
+      - name: Generate .env file from repo variables and secrets
+        run: |
+          echo "# Generated .env for environment ${{ steps.detect_env.outputs.env }}" > .env
+
+          gh variable list --env "${{ steps.detect_env.outputs.env }}" --json name,value \
+            | jq -r '.[] | "\(.name)=\(.value)"' >> .env
+
+          echo -e "\n# Secrets" >> .env
+          gh secret list --env "${{ steps.detect_env.outputs.env }}" --json name \
+            | jq -r '.[].name' \
+            | while read -r name; do
+                val=$(gh secret view "$name" --env "${{ steps.detect_env.outputs.env }}" --json value | jq -r .value)
+                echo "$name=$val" >> .env
+              done
+
+      - name: Show generated .env (debug, remove in prod)
+        run: cat .env
+
+
       - name: Install dependencies and build
         run: |
           npm install
