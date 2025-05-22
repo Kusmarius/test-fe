@@ -102,7 +102,7 @@ jobs:
           node-version: 18
 
       - name: Install GitHub CLI
-        uses: cli/cli-action@v2
+        uses: actions/setup-gh-cli@v2
 
       - name: Auth GH CLI
         run: gh auth setup-git
