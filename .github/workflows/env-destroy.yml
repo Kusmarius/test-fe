@@ -71,20 +71,17 @@ jobs:
           terraform workspace select default
           terraform workspace delete -force "$WORKSPACE"
 
-
       - name: Notify success to Discord
         if: success()
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         run: |
+          BRANCH="${{ github.event.pull_request.head.ref }}"
+
           curl -H "Content-Type: application/json" \
                -X POST \
                -d "$(jq -n \
-                  --arg branch "${{ steps.git_info.outputs.BRANCH }}" \
-                  --arg hash "${{ steps.git_info.outputs.HASH }}" \
-                  --arg author "${{ steps.git_info.outputs.AUTHOR }}" \
-                  --arg message "${{ steps.git_info.outputs.MESSAGE }}" \
-                  --arg bucket "${{ steps.tf-outputs.outputs.bucket }}" \
-                  '{content: "✅ Deployment finished\nEnvironment: https://\($bucket)\nAuthor: \($author)\nMessage: \($message)\n\($branch)@\($hash)\n"}')" \
+                  --arg branch "$BRANCH" \
+                  '{content: "✅ Environment destroyed for branch: \($branch)\n"}')" \
                $DISCORD_WEBHOOK
 
