@@ -102,10 +102,17 @@ jobs:
           node-version: 18
 
       - name: Install GitHub CLI
-        uses: actions/setup-gh-cli@v2
+        run: |
+          type -p gh || (curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg && \
+          sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg && \
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null && \
+          sudo apt update && sudo apt install gh -y)
 
-      - name: Auth GH CLI
-        run: gh auth setup-git
+      - name: Authenticate GitHub CLI
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "$GITHUB_TOKEN" | gh auth login --with-token
+
 
       - name: Detect environment based on branch
         id: detect_env
