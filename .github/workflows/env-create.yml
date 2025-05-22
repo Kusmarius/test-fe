@@ -1,10 +1,6 @@
 name: Feature Terraform Deploy
 
 
-permissions:
-  contents: read
-  environments: read
-
 on:
   push:
     branches:
