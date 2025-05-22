@@ -102,30 +102,29 @@ jobs:
         with:
           node-version: 18
 
-      - name: Generate .env for FEATURE
-        if: startsWith(github.ref_name, 'feature/')
-        run: echo "${{ vars.ENV_FEATURE }}" > .env
-
-      - name: Generate .env for DEVELOP
-        if: github.ref_name == 'develop'
-        run: echo "${{ vars.ENV_DEVELOP }}" > .env
-
-      - name: Generate .env for MAIN
-        if: github.ref_name == 'main'
-        run: echo "${{ vars.ENV_STAGING }}" > .env
-
-      - name: Generate .env for PROD (fallback)
-        if: github.ref_name != 'develop' && github.ref_name != 'main' && !startsWith(github.ref_name, 'feature/')
-        run: echo "${{ vars.ENV_PROD }}" > .env
-
-      - name: Show .env content
+      - name: Generate .env from repo variables
         run: |
-          echo "✅ Generated .env file:"
+          echo "🛠 Generating .env for branch: $GITHUB_REF_NAME"
+
+          case "$GITHUB_REF_NAME" in
+            feature/*)
+              echo "${{ vars.ENV_FEATURE }}" > .env
+              ;;
+            develop)
+              echo "${{ vars.ENV_DEVELOP }}" > .env
+              ;;
+            main)
+              echo "${{ vars.ENV_STAGING }}" > .env
+              ;;
+            *)
+              echo "${{ vars.ENV_PROD }}" > .env
+              ;;
+          esac
+
+          echo "✅ .env content:"
           cat .env
-
-
-      - name: Show generated .env (debug, remove in prod)
-        run: cat .env
+        env:
+          GITHUB_REF_NAME: ${{ github.ref_name }}
 
 
       - name: Install dependencies and build
