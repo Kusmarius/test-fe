@@ -120,6 +120,7 @@ jobs:
 
           echo "✅ .env file created:"
           cat .env
+        shell: bash
         env:
           GITHUB_REF_NAME: ${{ github.ref_name }}
 
