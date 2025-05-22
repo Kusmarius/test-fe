@@ -104,25 +104,24 @@ jobs:
 
       - name: Generate .env from repo variable
         run: |
-          echo "🛠 Generating .env for branch ${{ github.ref_name }}"
+          echo "🛠 Generating .env for branch: $GITHUB_REF_NAME"
 
-          case "${{ github.ref_name }}" in
-            feature/*)
-              echo "${{ vars.ENV_FEATURE }}" > .env
-              ;;
-            develop)
-              echo "${{ vars.ENV_DEVELOP }}" > .env
-              ;;
-            main)
-              echo "${{ vars.ENV_MAIN }}" > .env
-              ;;
-            *)
-              echo "${{ vars.ENV_PROD }}" > .env
-              ;;
-          esac
+          BRANCH_NAME="$GITHUB_REF_NAME"
+
+          if [[ "$BRANCH_NAME" == feature/* ]]; then
+            echo "${{ vars.ENV_FEATURE }}" > .env
+          elif [[ "$BRANCH_NAME" == "develop" ]]; then
+            echo "${{ vars.ENV_DEVELOP }}" > .env
+          elif [[ "$BRANCH_NAME" == "main" ]]; then
+            echo "${{ vars.ENV_STAGING }}" > .env
+          else
+            echo "${{ vars.ENV_PROD }}" > .env
+          fi
 
           echo "✅ .env file created:"
           cat .env
+        env:
+          GITHUB_REF_NAME: ${{ github.ref_name }}
 
 
       - name: Show generated .env (debug, remove in prod)
