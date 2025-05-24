@@ -19,5 +19,5 @@ jobs:
       - name: Show environment name and Redis secrets
         run: |
           echo "This job is running in environment: develop"
-          echo "REDIS_PASSWORD is: $REDIS_PASSWORD"
+          echo "REDIS_PASSWORD is: ${{ secrets.REDIS_PASSWORD }}"
 
