@@ -1,4 +1,4 @@
-name: Show Environment 1
+name: Write .env file
 
 on:
   workflow_dispatch:
@@ -7,17 +7,19 @@ on:
       - feature/user_modal_dalog
 
 jobs:
-  show-env:
+  write-env:
     runs-on: ubuntu-latest
     environment: develop
 
     steps:
-      - name: Show environment variable REDIS_HOST
-        run: |
-          echo "REDIS_HOST is: ${{ vars.REDIS_HOST }}"
+      - name: Checkout repo
+        uses: actions/checkout@v3
 
-      - name: Show environment name and Redis secrets
+      - name: Create .env file with secrets and vars
         run: |
-          echo "This job is running in environment: develop"
-          echo "REDIS_PASSWORD is: ${{ secrets.REDIS_PASSWORD }}"
+          echo "REDIS_HOST=${{ vars.REDIS_HOST }}" > .env
+          echo "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}" >> .env
+
+      - name: Show created .env content
+        run: cat .env
 
