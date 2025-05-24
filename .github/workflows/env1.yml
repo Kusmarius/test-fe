@@ -20,6 +20,11 @@ jobs:
           echo "REDIS_HOST=${{ vars.REDIS_HOST }}" > .env
           echo "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}" >> .env
 
+      - name: Debug REDIS_PASSWORD length
+        run: |
+          echo "Length of REDIS_PASSWORD is: ${#REDIS_PASSWORD}"
+
+
       - name: Show created .env content
         run: cat .env
 
