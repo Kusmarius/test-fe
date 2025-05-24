@@ -1,0 +1,17 @@
+name: Show Environment 1
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/user_modal_dalog
+jobs:
+  show-env:
+    runs-on: ubuntu-latest
+    environment: develop
+
+    steps:
+      - name: Show environment name
+        run: |
+          echo "This job is running in environment: develop"
+
