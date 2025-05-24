@@ -15,32 +15,19 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Create .env file with secrets and vars
+      - name: Fetch environment variables
         run: |
-          echo "REDIS_HOST=${{ vars.REDIS_HOST }}" > .env
-          echo "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}" >> .env
+          curl -s -H "Authorization: token $PAT_TOKEN" \
+               -H "Accept: application/vnd.github.v3+json" \
+               https://api.github.com/repos/Kusmarius/test-fe/environments/develop/variables | \
+          jq -r '.variables[] | "\(.name)=\(.value)"' > .env
 
       - name: Fetch environment secrets names
- #       env:
- #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           curl -s -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
                -H "Accept: application/vnd.github.v3+json" \
                https://api.github.com/repos/Kusmarius/test-fe/environments/develop/secrets \
           | jq -r '.secrets[] | "\(.name)"' >> .sec
-
-
-      - name: Export variables from .sec file lines
-        run: |
-          while IFS= read -r line
-          do
-            if [[ -n "$line" && "$line" =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]]; then
-              export "$line"="$line"
-              echo "Exported variable $line with value $line"
-            else
-              echo "Skipping invalid or empty line: '$line'"
-            fi
-          done <.sec
 
 
       - name: Show created .env content
