@@ -5,13 +5,15 @@ on:
   push:
     branches:
       - feature/user_modal_dalog
+
 jobs:
   show-env:
     runs-on: ubuntu-latest
     environment: develop
 
     steps:
-      - name: Show environment name
+      - name: Show environment name and Redis host
         run: |
           echo "This job is running in environment: develop"
+          echo "REDIS_HOST is: $REDIS_HOST"
 
