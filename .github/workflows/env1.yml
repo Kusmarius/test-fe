@@ -9,7 +9,7 @@ on:
 jobs:
   write-env:
     runs-on: ubuntu-latest
-    environment: develop
+    environment: staging
 
     steps:
       - name: Checkout repo
