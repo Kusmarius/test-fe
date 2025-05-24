@@ -12,7 +12,6 @@ jobs:
     environment: develop
 
     steps:
-    steps:
       - name: Show environment variable REDIS_HOST
         run: echo "REDIS_HOST is: ${{ vars.REDIS_HOST }}"
 
