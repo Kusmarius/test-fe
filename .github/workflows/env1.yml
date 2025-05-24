@@ -21,8 +21,8 @@ jobs:
           echo "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}" >> .env
 
       - name: Fetch environment secrets names
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+ #       env:
+ #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           curl -s -H "Authorization: token ${{ secrets.PAT_TOKEN }}"" \
                -H "Accept: application/vnd.github.v3+json" \
