@@ -29,6 +29,13 @@ jobs:
                https://api.github.com/repos/Kusmarius/test-fe/environments/develop/secrets \
           | jq -r '.secrets[] | "\(.name)"' >> .sec
 
+      - name: Generate .env from .sec file with secrets expressions
+        run: |
+          >> .env
+          while IFS= read -r secret_name; do
+            echo "$secret_name=\${{ secrets.$secret_name }}" >> .env
+          done < .sec
+
       - name: Show created .env content
         run: cat .env
 
