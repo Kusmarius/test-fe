@@ -31,7 +31,7 @@ jobs:
 
       - name: Generate .env from .sec file with secrets expressions
         run: |
-          >> .env
+          > .env
           while IFS= read -r secret_name; do
             echo "$secret_name=\${{ secrets.$secret_name }}" >> .env
           done < .sec
