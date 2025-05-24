@@ -30,16 +30,15 @@ jobs:
           | jq -r '.secrets[] | "\(.name)"' >> .sec
 
 
-      - name: Generate script with echo commands
+      - name: Generate env file creation script
         run: |
           > .env.sh
           while IFS= read -r secret_name; do
             echo "echo \"$secret_name=\${{ secrets.$secret_name }}\" >> .env" >> .env.sh
           done < .sec
 
-      - name: Run generated script to populate .env
-        run: |
-          bash .env.sh
+      - name: Run env file creation script
+        run: bash .env.sh
 
 
 #      - name: Generate .env with literal GH secrets expressions
