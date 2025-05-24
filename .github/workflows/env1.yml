@@ -12,8 +12,8 @@ jobs:
     environment: develop
 
     steps:
-      - name: Show environment name and Redis host
+      - name: Show environment name and Redis secrets
         run: |
           echo "This job is running in environment: develop"
-          echo "REDIS_HOST is: $REDIS_HOST"
+          echo "REDIS_PASSWORD is: $REDIS_PASSWORD"
 
