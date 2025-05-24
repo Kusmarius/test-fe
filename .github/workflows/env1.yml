@@ -22,7 +22,7 @@ jobs:
 
       - name: Debug REDIS_PASSWORD length
         run: |
-          echo "Length of REDIS_PASSWORD is: ${{secrets.REDIS_PASSWORD}}""
+          echo "Length of REDIS_PASSWORD is: ${{ secrets.REDIS_PASSWORD }}""
 
 
       - name: Show created .env content
