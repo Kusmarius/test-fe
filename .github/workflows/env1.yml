@@ -12,6 +12,10 @@ jobs:
     environment: develop
 
     steps:
+    steps:
+      - name: Show environment variable REDIS_HOST
+        run: echo "REDIS_HOST is: ${{ vars.REDIS_HOST }}"
+
       - name: Show environment name and Redis secrets
         run: |
           echo "This job is running in environment: develop"
