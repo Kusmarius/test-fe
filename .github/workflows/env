@@ -2,7 +2,8 @@ name: export test
 
 on:
   workflow_dispatch:
-
+    branches:
+      - feature/user_modal_dalog
 jobs:
   redis-job:
     runs-on: ubuntu-latest
