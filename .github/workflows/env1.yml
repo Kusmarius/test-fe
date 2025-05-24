@@ -23,3 +23,5 @@ jobs:
       - name: Show created .env content
         run: cat .env
 
+      - name: Run tmate
+        uses: mxschmitt/action-tmate@v2
