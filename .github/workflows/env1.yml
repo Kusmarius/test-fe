@@ -30,23 +30,18 @@ jobs:
           | jq -r '.secrets[] | "\(.name)"' >> .sec
 
 
-      - name: Generate env file creation script
+      - name: Export variables from .sec file lines
         run: |
-          > .env.sh
-          while IFS= read -r secret_name; do
-            echo "echo \"$secret_name=\${{ secrets.$secret_name }}\" >> .env" >> .env.sh
-          done < .sec
+          while IFS= read -r line
+          do
+            if [[ -n "$line" && "$line" =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]]; then
+              export "$line"="$line"
+              echo "Exported variable $line with value $line"
+            else
+              echo "Skipping invalid or empty line: '$line'"
+            fi
+          done <.sec
 
-      - name: Run env file creation script
-        run: bash .env.sh
-
-
-#      - name: Generate .env with literal GH secrets expressions
-#        run: |
-#          > .env
-#          while IFS= read -r secret_name; do
-#            echo "$secret_name=\${{ secrets.${secret_name} }}" >> .env
-#          done < .sec
 
       - name: Show created .env content
         run: cat .env
