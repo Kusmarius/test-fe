@@ -32,7 +32,7 @@ jobs:
       - name: Set ENV variables
         id: vars
         run: |
-          RAW_BRANCH="${GITHUB_REF#refs/heads/}"  # e.g. feature/amplify-test
+          RAW_BRANCH="${GITHUB_REF#refs/heads/}"
           SANITIZED_BRANCH=$(echo "$RAW_BRANCH" | tr '/' '-' | tr '_' '-')
           echo "branch=$RAW_BRANCH" >> $GITHUB_OUTPUT
           echo "env=$SANITIZED_BRANCH" >> $GITHUB_OUTPUT
@@ -58,7 +58,6 @@ jobs:
               --framework "Next.js" \
               --stage DEVELOPMENT \
               --enable-auto-build \
-              --backend-environment-arn "" \
               --source-branch-name "${{ steps.vars.outputs.branch }}"
           fi
 
@@ -74,7 +73,7 @@ jobs:
             aws amplify create-domain-association \
               --app-id ${{ secrets.AMPLIFY_APP_ID }} \
               --domain-name ${{ env.DOMAIN_NAME }} \
-              --sub-domain-settings prefix=${{ steps.vars.outputs.env }},branchName=${{ steps.vars.outputs.env }}
+              --sub-domain-settings "prefix=${{ steps.vars.outputs.env }},branchName=${{ steps.vars.outputs.env }}"
           fi
 
       - name: Associate subdomain (if cert is ready)
