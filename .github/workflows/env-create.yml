@@ -36,6 +36,7 @@ jobs:
           SANITIZED_BRANCH=$(echo "$RAW_BRANCH" | tr '/' '-' | tr '_' '-')
           echo "branch=$RAW_BRANCH" >> $GITHUB_OUTPUT
           echo "env=$SANITIZED_BRANCH" >> $GITHUB_OUTPUT
+          echo "Sanitized branch: $SANITIZED_BRANCH"
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v3
@@ -46,12 +47,15 @@ jobs:
 
       - name: Create Amplify branch (if doesn't exist)
         run: |
-          set -e
+          echo "Checking if branch exists..."
           BRANCH_EXISTS=$(aws amplify list-branches \
             --app-id ${{ secrets.AMPLIFY_APP_ID }} \
             --query "branches[?branchName=='${{ steps.vars.outputs.env }}'] | length(@)")
 
+          echo "BRANCH_EXISTS=$BRANCH_EXISTS"
+
           if [ "$BRANCH_EXISTS" -eq 0 ]; then
+            echo "Branch doesn't exist, creating it..."
             aws amplify create-branch \
               --app-id ${{ secrets.AMPLIFY_APP_ID }} \
               --branch-name ${{ steps.vars.outputs.env }} \
@@ -59,11 +63,13 @@ jobs:
               --stage DEVELOPMENT \
               --enable-auto-build \
               --source-branch-name "${{ steps.vars.outputs.branch }}"
+          else
+            echo "Branch already exists, skipping creation."
           fi
 
       - name: Ensure domain association exists
         run: |
-          set -e
+          echo "Checking domain association..."
           DOMAIN_EXISTS=$(aws amplify get-domain-association \
             --app-id ${{ secrets.AMPLIFY_APP_ID }} \
             --domain-name ${{ env.DOMAIN_NAME }} 2>/dev/null || echo "not_found")
@@ -74,26 +80,34 @@ jobs:
               --app-id ${{ secrets.AMPLIFY_APP_ID }} \
               --domain-name ${{ env.DOMAIN_NAME }} \
               --sub-domain-settings "prefix=${{ steps.vars.outputs.env }},branchName=${{ steps.vars.outputs.env }}"
+          else
+            echo "Domain already associated."
           fi
 
       - name: Associate subdomain (if cert is ready)
         run: |
-          set -e
-
+          echo "Checking domain status before updating subdomain..."
           STATUS=$(aws amplify get-domain-association \
             --app-id ${{ secrets.AMPLIFY_APP_ID }} \
             --domain-name ${{ env.DOMAIN_NAME }} \
             --query "domainAssociation.status" --output text)
+
+          echo "Domain status: $STATUS"
 
           if [ "$STATUS" != "AVAILABLE" ]; then
             echo "Domain is not ready (status: $STATUS), skipping subdomain update"
             exit 0
           fi
 
+          echo "Fetching domain association config..."
           aws amplify get-domain-association \
             --app-id ${{ secrets.AMPLIFY_APP_ID }} \
             --domain-name ${{ env.DOMAIN_NAME }} > domains.json
 
+          echo "Current domain config:"
+          cat domains.json
+
+          echo "Updating domain JSON with new subdomain..."
           jq \
             --arg prefix "${{ steps.vars.outputs.env }}" \
             --arg branch "${{ steps.vars.outputs.env }}" \
@@ -104,6 +118,9 @@ jobs:
             | {subDomainSettings: .}' \
             domains.json > updated.json
 
+          echo "Updated domain config:"
+          cat updated.json
+
           aws amplify update-domain-association \
             --app-id ${{ secrets.AMPLIFY_APP_ID }} \
             --domain-name ${{ env.DOMAIN_NAME }} \
@@ -111,6 +128,7 @@ jobs:
 
       - name: Trigger Amplify build job
         run: |
+          echo "Triggering Amplify build job..."
           aws amplify start-job \
             --app-id ${{ secrets.AMPLIFY_APP_ID }} \
             --branch-name ${{ steps.vars.outputs.env }} \
