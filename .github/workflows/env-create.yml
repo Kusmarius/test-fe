@@ -49,5 +49,72 @@ jobs:
           set -e
           BRANCH_EXISTS=$(aws amplify list-branches \
             --app-id ${{ secrets.AMPLIFY_APP_ID }} \
-            --query "branches[?branchName=='${{ steps.vars.outputs.en]()
+            --query "branches[?branchName=='${{ steps.vars.outputs.env }}'] | length(@)")
+
+          if [ "$BRANCH_EXISTS" -eq 0 ]; then
+            aws amplify create-branch \
+              --app-id ${{ secrets.AMPLIFY_APP_ID }} \
+              --branch-name ${{ steps.vars.outputs.env }} \
+              --framework "Next.js" \
+              --stage DEVELOPMENT \
+              --enable-auto-build \
+              --backend-environment-arn "" \
+              --source-branch-name "${{ steps.vars.outputs.branch }}"
+          fi
+
+      - name: Ensure domain association exists
+        run: |
+          set -e
+          DOMAIN_EXISTS=$(aws amplify get-domain-association \
+            --app-id ${{ secrets.AMPLIFY_APP_ID }} \
+            --domain-name ${{ env.DOMAIN_NAME }} 2>/dev/null || echo "not_found")
+
+          if [ "$DOMAIN_EXISTS" = "not_found" ]; then
+            echo "Domain association not found. Creating it..."
+            aws amplify create-domain-association \
+              --app-id ${{ secrets.AMPLIFY_APP_ID }} \
+              --domain-name ${{ env.DOMAIN_NAME }} \
+              --sub-domain-settings prefix=${{ steps.vars.outputs.env }},branchName=${{ steps.vars.outputs.env }}
+          fi
+
+      - name: Associate subdomain (if cert is ready)
+        run: |
+          set -e
+
+          STATUS=$(aws amplify get-domain-association \
+            --app-id ${{ secrets.AMPLIFY_APP_ID }} \
+            --domain-name ${{ env.DOMAIN_NAME }} \
+            --query "domainAssociation.status" --output text)
+
+          if [ "$STATUS" != "AVAILABLE" ]; then
+            echo "Domain is not ready (status: $STATUS), skipping subdomain update"
+            exit 0
+          fi
+
+          aws amplify get-domain-association \
+            --app-id ${{ secrets.AMPLIFY_APP_ID }} \
+            --domain-name ${{ env.DOMAIN_NAME }} > domains.json
+
+          jq \
+            --arg prefix "${{ steps.vars.outputs.env }}" \
+            --arg branch "${{ steps.vars.outputs.env }}" \
+            '.domainAssociation.subDomains
+            | map({prefix: .subDomainSetting.prefix, branchName: .subDomainSetting.branchName})
+            + [{"prefix": $prefix, "branchName": $branch}]
+            | unique
+            | {subDomainSettings: .}' \
+            domains.json > updated.json
+
+          aws amplify update-domain-association \
+            --app-id ${{ secrets.AMPLIFY_APP_ID }} \
+            --domain-name ${{ env.DOMAIN_NAME }} \
+            --cli-input-json file://updated.json
+
+      - name: Trigger Amplify build job
+        run: |
+          aws amplify start-job \
+            --app-id ${{ secrets.AMPLIFY_APP_ID }} \
+            --branch-name ${{ steps.vars.outputs.env }} \
+            --job-type RELEASE \
+            --job-reason "GitHub Actions deploy for ${{ steps.vars.outputs.env }}"
 
