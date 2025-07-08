@@ -1,87 +1,62 @@
-name: Destroy Terraform Workspace on PR Merge to Develop
+name: Destroy Feature Environment on Branch Delete
 
 on:
-  pull_request:
-    types: [closed]
+  delete:
     branches:
-      - develop
+      - 'feature/**'
+
+env:
+  AWS_REGION: us-east-1
+  DOMAIN_NAME: zergfi.com
 
 jobs:
-  terraform-destroy:
-    if: github.event.pull_request.merged == true
-    name: Destroy Terraform Resources
+  destroy-feature:
+    name: Destroy Feature Branch Environment
     runs-on: ubuntu-latest
 
     steps:
-      - name: Notify start to Discord
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+      - name: Set ENV variables
+        id: vars
         run: |
-          BRANCH="${{ github.event.pull_request.head.ref }}"
-          BASE_BRANCH="${{ github.event.pull_request.base.ref }}"
-          AUTHOR="${{ github.event.pull_request.user.login }}"
-          
-          curl -H "Content-Type: application/json" \
-               -X POST \
-               -d "$(jq -n \
-                  --arg branch "$BRANCH" \
-                  --arg base "$BASE_BRANCH" \
-                  --arg author "$AUTHOR" \
-                  '{content: "🧨 Destroying environment for branch: \($branch)\nMerged into: \($base)\nPR Author: \($author)"}')" \
-               $DISCORD_WEBHOOK
+          RAW_BRANCH="${GITHUB_REF##*/}"
+          SANITIZED_BRANCH=$(echo "$RAW_BRANCH" | tr '/' '-' | tr '_' '-')
+          echo "branch=$RAW_BRANCH" >> $GITHUB_OUTPUT
+          echo "env=$SANITIZED_BRANCH" >> $GITHUB_OUTPUT
 
-      - name: Set up SSH
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.TERRAFORM_REPO_SSH_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan github.com >> ~/.ssh/known_hosts
-
-      - name: Clone external repo
-        run: |
-          git clone "${{ secrets.TERRAFORM_REPO_URL }}" .
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v3
         with:
-          terraform_version: 1.11.4
-          terraform_wrapper: false
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
 
-      - name: Destroy Terraform
-        id: destroy
-        working-directory: dev
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - name: Delete Amplify branch
         run: |
-          SOURCE_BRANCH="${{ github.event.pull_request.head.ref }}"
-          WORKSPACE=$(echo "$SOURCE_BRANCH" | sed 's|[/_]|-|g')
+          echo "Deleting Amplify branch: ${{ steps.vars.outputs.env }}"
+          aws amplify delete-branch \
+            --app-id ${{ secrets.AMPLIFY_APP_ID }} \
+            --branch-name ${{ steps.vars.outputs.env }}
 
-          echo "Destroying Terraform workspace: $WORKSPACE"
-
-          terraform init
-
-          terraform workspace select "$WORKSPACE" || {
-            echo "Workspace $WORKSPACE doesn't exist. Nothing to destroy."
-            exit 0
-          }
-
-          terraform destroy -target=module.frontend -var="env=$WORKSPACE" -auto-approve
-
-          terraform workspace select default
-          terraform workspace delete -force "$WORKSPACE"
-
-      - name: Notify success to Discord
-        if: success()
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+      - name: Get current domain association
+        id: get-domains
         run: |
-          BRANCH="${{ github.event.pull_request.head.ref }}"
+          aws amplify get-domain-association \
+            --app-id ${{ secrets.AMPLIFY_APP_ID }} \
+            --domain-name ${{ env.DOMAIN_NAME }} > domains.json
 
-          curl -H "Content-Type: application/json" \
-               -X POST \
-               -d "$(jq -n \
-                  --arg branch "$BRANCH" \
-                  '{content: "✅ Environment destroyed for branch: \($branch)\n"}')" \
-               $DISCORD_WEBHOOK
+      - name: Filter out deleted subdomain and update association
+        run: |
+          SUBDOMAIN_TO_REMOVE="${{ steps.vars.outputs.env }}"
+          jq \
+            --arg prefix "$SUBDOMAIN_TO_REMOVE" \
+            '.domainAssociation.subDomains
+            | map(select(.subDomainSetting.prefix != $prefix))
+            | {subDomainSettings: map({prefix: .subDomainSetting.prefix, branchName: .subDomainSetting.branchName})}' \
+            domains.json > updated.json
+
+          echo "Updating domain association without $SUBDOMAIN_TO_REMOVE..."
+          aws amplify update-domain-association \
+            --app-id ${{ secrets.AMPLIFY_APP_ID }} \
+            --domain-name ${{ env.DOMAIN_NAME }} \
+            --cli-input-json file://updated.json
 
