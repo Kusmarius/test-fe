@@ -56,7 +56,7 @@ jobs:
               --app-id ${{ secrets.AMPLIFY_APP_ID }} \
               --branch-name ${{ steps.vars.outputs.env }} \
               --framework "Next.js" \
-              --stage development \
+              --stage DEVELOPMENT \
               --enable-auto-build
           fi
 
