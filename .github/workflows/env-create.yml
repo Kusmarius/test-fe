@@ -32,6 +32,16 @@ jobs:
       - name: Set ENV variables
         id: vars
         run: |
+          RAW_BRANCH="${GITHUB_REF#refs/heads/}"  # e.g. feature/amplify-test
+          SANITIZED_BRANCH=$(echo "$RAW_BRANCH" | tr '/' '-' | tr '_' '-')
+          echo "raw=$RAW_BRANCH" >> $GITHUB_OUTPUT
+          echo "env=$SANITIZED_BRANCH" >> $GITHUB_OUTPUT
+          echo "Sanitized branch: $SANITIZED_BRANCH"
+
+
+      - name: Set ENV variables
+        id: vars
+        run: |
           RAW_BRANCH="${GITHUB_REF#refs/heads/}"
           SANITIZED_BRANCH=$(echo "$RAW_BRANCH" | tr '/' '-' | tr '_' '-')
           echo "branch=$RAW_BRANCH" >> $GITHUB_OUTPUT
@@ -50,7 +60,7 @@ jobs:
           echo "Checking if branch exists..."
           BRANCH_EXISTS=$(aws amplify list-branches \
             --app-id ${{ secrets.AMPLIFY_APP_ID }} \
-            --query "branches[?branchName=='${{ steps.vars.outputs.env }}'] | length(@)")
+            --query "branches[?branchName=='${{ steps.vars.outputs.raw }}'] | length(@)")
 
           echo "BRANCH_EXISTS=$BRANCH_EXISTS"
 
@@ -58,7 +68,7 @@ jobs:
             echo "Branch doesn't exist, creating it..."
             aws amplify create-branch \
               --app-id ${{ secrets.AMPLIFY_APP_ID }} \
-              --branch-name ${{ steps.vars.outputs.env }} \
+              --branch-name ${{ steps.vars.outputs.raw }} \
               --framework "Next.js" \
               --stage DEVELOPMENT \
               --enable-auto-build
