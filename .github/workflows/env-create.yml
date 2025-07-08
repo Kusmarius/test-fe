@@ -61,8 +61,7 @@ jobs:
               --branch-name ${{ steps.vars.outputs.env }} \
               --framework "Next.js" \
               --stage DEVELOPMENT \
-              --enable-auto-build \
-              --source-branch-name "${{ steps.vars.outputs.branch }}"
+              --enable-auto-build
           else
             echo "Branch already exists, skipping creation."
           fi
