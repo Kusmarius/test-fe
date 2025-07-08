@@ -6,7 +6,7 @@ on:
       - 'feature/**'
 
 env:
-  AWS_REGION: eu-central-1
+  AWS_REGION: us-east-1
   DOMAIN_NAME: zergfi.com
 
 jobs:
