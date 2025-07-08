@@ -39,15 +39,6 @@ jobs:
           echo "Sanitized branch: $SANITIZED_BRANCH"
 
 
-      - name: Set ENV variables
-        id: vars
-        run: |
-          RAW_BRANCH="${GITHUB_REF#refs/heads/}"
-          SANITIZED_BRANCH=$(echo "$RAW_BRANCH" | tr '/' '-' | tr '_' '-')
-          echo "branch=$RAW_BRANCH" >> $GITHUB_OUTPUT
-          echo "env=$SANITIZED_BRANCH" >> $GITHUB_OUTPUT
-          echo "Sanitized branch: $SANITIZED_BRANCH"
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v3
         with:
