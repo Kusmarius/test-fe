@@ -60,6 +60,7 @@ jobs:
             aws amplify create-branch \
               --app-id ${{ secrets.AMPLIFY_APP_ID }} \
               --branch-name ${{ steps.vars.outputs.raw }} \
+              --display-name ${{ steps.vars.outputs.env }} \
               --framework "Next.js" \
               --stage DEVELOPMENT \
               --enable-auto-build
